@@ -1,55 +1,78 @@
+from collections import Counter
 import re
 
-#1195 @ 502,230: 24x28
+# ** Part 1 **
 
-def parseLine(claim):
-    claim = re.split("[#@:x\W]+", claim)
-    claim = [int(x) for x in claim if x != '']
+def getCoords(claim):
+    claim = re.split(r'[@:]+', claim)
+    origin = claim[1].split(',')
+    origin = (int(origin[0]), int(origin[1]))
+
+    dims = claim[2].split('x')
+    dims = (int(dims[0]), int(dims[1]))
+
+    xCoords = [x for x in range(origin[0], origin[0] + dims[0])]
+    yCoords = [y for y in range(origin[1], origin[1] + dims[1])]
+
+    return [(x, y) for x in xCoords for y in yCoords]
+
+def partOne(claimIDs):
+    claimed = Counter()
+    for claim in claimIDs:
+        claimCoords = getCoords(claim)
+
+        for coord in claimCoords:
+            claimed[coord] += 1
+
+    return len([x for x in claimed.values() if x > 1])
+
+# ** Part 2 **
+def parseID(id):
+    claim = re.split(r'[@:]+', id)
+    origin = claim[1].split(',')
+    origin = (int(origin[0]), int(origin[1]))
+
+    dims = claim[2].split('x')
+    dims = (int(dims[0]), int(dims[1]))
+
+    bottomRight = (origin[0] + dims[0], origin[1] + dims[1])
+
     return {
-        "id": claim[0],
-        "topLeft": (claim[1], claim[2]),
-        "bottomRight": (claim[1] + claim[3], claim[2] + claim[4]),
-        "overlapped": False,
+        "id": int(claim[0][1:]),
+        "topLeft": origin,
+        "botRight": bottomRight,
+        "overlapped": False
     }
 
-
-def areOverlapping(A, B):
+def claimsOverlap(A, B):
     A_X1, A_Y1 = A["topLeft"]
-    A_X2, A_Y2 = A["bottomRight"]
+    A_X2, A_Y2 = A["botRight"]
     B_X1, B_Y1 = B["topLeft"]
-    B_X2, B_Y2 = B["bottomRight"]
+    B_X2, B_Y2 = B["botRight"]
 
     return A_X1 < B_X2 and \
             A_X2 > B_X1 and \
             A_Y1 < B_Y2 and \
             A_Y2 > B_Y1
 
-claimIDs = open("biginput", 'r').readlines()
-seen = []
+def partTwo(claimIDs):
+    seenClaims = []
 
-for claim in claimIDs:
-    claim = parseLine(claim)
-    print(claim["id"])
-    for seenClaim in seen:
-        if claim["topLeft"] != seenClaim["topLeft"] and areOverlapping(claim, seenClaim):
-            claim["overlapped"] = True
-            seenClaim["overlapped"] = True
+    for _id in claimIDs:
+        curClaim = parseID(_id)
+        seenClaims.append(curClaim)
 
-    seen.append(claim)
+    for x in seenClaims:
+        for y in seenClaims:
+            if x["topLeft"] != y["topLeft"] and claimsOverlap(x, y):
+                x["overlapped"] = True
+                y["overlapped"] = True
 
-for claim in seen:
-    if not claim["overlapped"]:
-        print(claim)
-        exit()
+    for claim in seenClaims:
+        if not claim["overlapped"]: return claim['id']
+    
 
-"""
-for i, x in enumerate(nonoverlap):
-    for y in seen:
-        if x["topLeft"] != y["topLeft"] and areOverlapping(x, y):
-            x["overlapped"] = True
-            y["overlapped"] = True
 
-for claim in nonoverlap:
-    if not claim["overlapped"]:
-        print(claim)
-"""
+claimIDs = open("input", 'r').readlines()
+print(partOne(claimIDs))
+print(partTwo(claimIDs))
