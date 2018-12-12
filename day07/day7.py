@@ -1,64 +1,48 @@
 import cProfile
 from pprint import *
 
-relations = open("input", 'r').readlines()
-
-def genRelationDict():
+def genRelationDict(relations):
 	relationDict = dict((chr(a),set()) for a in range(65,91))
 	for r in relations:
 		relationDict[r[36]].add(r[5])
 	return relationDict
 
-# Part1
-relationDict = genRelationDict()
-available, doneSteps = [], []
+def day7(relations, workerCount):
+	relationDict = genRelationDict(relations)
+	available, doneSteps = [], []
+	workers = [[]]*workerCount
+	time = 0
 
-while relationDict:
-	for step, preReqs in relationDict.items():
-		relationDict[step] -= set(doneSteps)
+	while relationDict or sum(map(bool, workers)):
+		for step, preReqs in relationDict.items():
+			relationDict[step] -= set(doneSteps)
 
-		if relationDict[step] or step in available:
-			continue
-		available.append(step)
-		del relationDict[step]
+			if relationDict[step] or step in available:
+				continue
+			available.append(step)
+			del relationDict[step]
 
-	available.sort(reverse=True)
-	doneSteps.append(available.pop())
+		available.sort(reverse=True)
 
-print(''.join(doneSteps))
+		for i, w in enumerate(workers):
+			if w or not available:
+				continue
+			step = available.pop()
+			workers[i] = [step, ord(step) - 4]
 
-# Part 2
-relationDict = genRelationDict()
-available, doneSteps = [], set()
-workers = [[]]*5
-time = 0
+		chunk = min(workers, key=lambda x: float('inf') if not x else x[1])[1]
+		time += chunk
 
-while relationDict or sum(map(bool, w)):
-	for step, preReqs in relationDict.items():
-		relationDict[step] -= doneSteps
+		for i, w in enumerate(workers):
+			if not w: continue
+			workers[i] = [w[0], w[1]-chunk]
 
-		if relationDict[step] or step in available:
-			continue
-		available.append(step)
-		del relationDict[step]
+			if workers[i][1] == 0:
+				doneSteps.append(w[0])
+				workers[i] = []
 
-	available.sort(reverse=True)
+	return time, ''.join(doneSteps)
 
-	for i, w in enumerate(workers):
-		if w or not available:
-			continue
-		step = available.pop()
-		workers[i] = [step, ord(step) - 4]
-
-	chunk = min(workers, key=lambda x: float('inf') if not x else x[1])[1]
-	time += chunk
-
-	for i, w in enumerate(workers):
-		if not w: continue
-		workers[i] = [w[0], w[1]-chunk]
-
-		if workers[i][1] == 0:
-			doneSteps.add(w[0])
-			workers[i] = []
-
-print(time)
+relations = open("input", 'r').readlines()
+print(day7(relations, 1))
+print(day7(relations, 5))
